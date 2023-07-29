@@ -5,8 +5,9 @@ const {By, until, WebDriver, WebDriverWait} = require('./selenium');
 //,'FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO", 'GOALS'
 //,"U/O ANGOLI","GOAL/NO GOAL",'U/O TIRI TOTALI', "U/O TIRI IN PORTA","OVER/UNDER", "U/O FUORIGIOCO", "U/O FALLI COMMESSI" 
 //"INTERNAZIONALE","INTERNAZIONALI GIOVANILI", "ARGENTINA","FINLANDIA","LITUANIA", 
-const tipiDiGiocateArr = new Set(["3 CHANCE MIX", , 'FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO", 'GOALS']);
-const tipiDiSottoGiocateArr = new Set(["X O U/O O GG/NG","U/O ANGOLI","GOAL/NO GOAL",'U/O TIRI TOTALI', "U/O TIRI IN PORTA","OVER/UNDER", "U/O FUORIGIOCO", "U/O FALLI COMMESSI" ]);
+const tipiDiGiocateArr = new Set(['FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO"]);
+const tipiDiSottoGiocateArr = new Set(["U/O ANGOLI",'U/O TIRI TOTALI','U/O TIRI TOTALI TEAM', "U/O TIRI IN PORTA","U/O TIRI IN PORTA TEAM","U/O FUORIGIOCO", "U/O FALLI COMMESSI" ]);
+const giocateSpeciali = new Set (["U/O ANGOLI"])
 const tipiDiNazioniArr = new Set (["CONFERENCE LEAGUE", "ARGENTINA"])
  // Define the SportItaliaPage class
 
@@ -136,7 +137,7 @@ async collectSottoScommesse(tipoDiGiocata) {
         }
       }
 
-      const currentObjArr = await this.collectAllTheInfo();
+      const currentObjArr = await this.collectAllTheInfo(tipoDiGiocata);
       currentObjArr.forEach((obj) => {
         obj.tipoDiGiocata = tipoDiGiocata;
         obj.nazione = nazione;
@@ -152,7 +153,7 @@ async collectSottoScommesse(tipoDiGiocata) {
 //----------------------------------------
 //----------------------------------------
 
-async collectAllTheInfo() {
+async collectAllTheInfo(tipoDiGiocata) {
 console.log("line 156_____________________________")
   await this.pause(2);
    // Collect date information
@@ -160,7 +161,7 @@ console.log("line 156_____________________________")
    // Collect teams names
   let teamsNamesArrBlob = await this.collectTeamsName();
    // Collect teams lineas
-  let lineaArrBlob = await this.collectTeamsLinea();
+  let lineaArrBlob = await this.collectTeamsLinea(tipoDiGiocata);
    // Collect tipo di quota
   let tipoDiQuotaArr = await this.collectTipoDiQuota();
    // Group tipo di quota into separate arrays
@@ -194,32 +195,36 @@ async collectTipoDiQuota() {
         return array
 }
 
-async collectTeamsLinea() {
+async collectTeamsLinea(tipoDiGiocata) {
     let array = []
+        // Selettore CSS composto per combinare i due selettori
     const selector1 = ".quote__row__item--handicap div span.ng-binding";
     const selector2 = "div.box_quota.box_quota--manifestazione[ng-if='!BQCoreCtrl.boxQuotaObj.Status.Exist'] div.outcome_wrapper span";
-
-    // Selettore CSS composto per combinare i due selettori
     const composedSelector = `${selector1},${selector2}`;
-
+        //variabili per ottenere i div dove sono contenuti i dati che ci interessano 
     let fatherBox = await this.driver.findElement(By.className("betprematch__manifestazione__quote__scrolls ng-scope"))
     let divConQuoteSquadre = await fatherBox.findElements(By.css("div.betprematch__manifestazione__quote div.betprematch__manifestazione__quote__item"))
-
-    for (let i = 0; i < divConQuoteSquadre.length; i++){
     
+    if(giocateSpeciali.has(tipoDiGiocata)){
+      //raccogliere i dati facendo hover con il cursore
+      console.log("è il momento di sviluppare una fn")
+    } else {
+      //raccogliere la linea gia presente
+      for (let i = 0; i < divConQuoteSquadre.length; i++){
+
+        const elements = await this.driver.findElements(By.css(composedSelector));   
     
-    const elements = await this.driver.findElements(By.css(composedSelector));   
-    console.log(elements)
-
-
-      for(let j = 0; j < elements.length; j++ ){
-        let quota = ""
-        quota = elements[j].getText()
-        array.push(quota)      
-      }
-      console.log("THis is teamsLinea in  (collectTeamsQuota)",array)
-      return array
+          for(let j = 0; j < elements.length; j++ ){
+            
+          let quota = ""
+          quota = elements[j].getText()
+          array.push(quota)      
+          }
+          console.log("THis is teamsLinea in  (collectTeamsQuota)",array)
+          return array
+        }
     }
+
 }
   
 async collectDateInfo() {
@@ -314,7 +319,7 @@ async  visualizzaElementi(array) {
         await this.visualizzaElementi(elemento);
       } else {
         // Altrimenti, stampare l'elemento
-        console.log(elemento, "change made to test git");
+        console.log(elemento);
       }
     }
   }
