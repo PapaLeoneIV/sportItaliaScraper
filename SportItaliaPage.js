@@ -302,7 +302,7 @@ async creaSottoarrayDiLunghezza2(array) {
 
   return sottoarray;
 }
-async visualizzaElementi(array) {
+async  visualizzaElementi(array) {
   // Controlla se l'input è un array
   if (Array.isArray(array)) {
     // Scorrere tutti gli elementi dell'array
