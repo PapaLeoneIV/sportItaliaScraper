@@ -314,7 +314,7 @@ async  visualizzaElementi(array) {
         await this.visualizzaElementi(elemento);
       } else {
         // Altrimenti, stampare l'elemento
-        console.log(elemento);
+        console.log(elemento, "change made to test git");
       }
     }
   }
