@@ -8,18 +8,33 @@ let obj = {
         GOALS:{},
         FUORIGIOCO: {}, 
         FALLI_COMMESSI: {},
-        CARTELLINI: {
-            UO_CARTEllINI:{
-                WD: "" 
-            },
-        TIRI: {
-            UO_TIRI_TOTALI: {
-                SEGNA_G : "2.5"
-            },
-            UO_TIRI_IN_PORTA: {}
-                },
+        CARTELLINI: {},
+        TIRI: {},
         CALCI_DANGOLO: {},
-        GOALS:{}
+        GOALS:{},
         }
-    }
+}
+
+obj = {
+
+    date : "27 luglio, giovedì",
+    nazione : "ITALIA",
+    squadra1: "XXX",
+    squadra2: "YYY",
+    linea: "ZZZ",
+    quota: "AAA"
+}
+
+or
+
+obj = {
+
+    date : "27 luglio, giovedì",
+    nazione : "ITALIA",
+    squadra1: "XXX",
+    squadra2: "YYY",
+    linea: "ZZZ",
+    quota: "AAA",
+    under: "BBB",
+    over: "CCC"
 }

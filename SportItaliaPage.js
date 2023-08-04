@@ -7,8 +7,8 @@ const {By, until, WebDriver, WebDriverWait} = require('./selenium');
 //"INTERNAZIONALE","INTERNAZIONALI GIOVANILI", "ARGENTINA","FINLANDIA","LITUANIA", 
 const tipiDiGiocateArr = new Set(['FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO"]);
 const tipiDiSottoGiocateArr = new Set(["U/O ANGOLI",'U/O TIRI TOTALI','U/O TIRI TOTALI TEAM', "U/O TIRI IN PORTA","U/O TIRI IN PORTA TEAM","U/O FUORIGIOCO", "U/O FALLI COMMESSI" ]);
-const giocateSpeciali = new Set (["U/O ANGOLI"])
-const tipiDiNazioniArr = new Set (["CONFERENCE LEAGUE", "ARGENTINA"])
+const giocateSpeciali = new Set (["U/O ANGOLI", "CARTELLINI"])
+const tipiDiNazioniArr = new Set (["INGHILTERRA", "CONFERENCE LEAGUE", "ARGENTINA","BRASILE", "COLOMBIA", "CHAMPIONS LEAGUE", "INTERNAZIONALI CLUB"])
  // Define the SportItaliaPage class
 
 class SportItaliaPage {
@@ -22,7 +22,7 @@ async maximizeWindow() {
     await this.driver.manage().window().maximize();
     console.log("Maximizing window")
 }
-   // Function to navigate to a page
+// Function to navigate to a page
 async navigateToPage(url) {
     await this.driver.get(url);
     console.log("Navigating to the URL")
@@ -74,17 +74,15 @@ async collectTipiDiScommesse() {
               console.log(`Questo è il primo tipo di scommesse che ci interessano, il testo è: --> ${tipoDiGiocataText}`);
               objArr = await this.collectSottoScommesse(giocateArr[i])
               objArr.forEach(obj => {
-                obj.giocata = tipoDiGiocataText
+                obj.Giocata = tipoDiGiocataText
               })
               await this.logKeysAndValues(objArr)
-              console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",JSON.stringify(objArr))
             } else {
               console.log(`non è nei nostri interessi ----> ${tipoDiGiocataText}  (collectTipiDiScommesse).`);
             }
           }
         }
 }
-
 async collectSottoScommesse(tipoDiGiocata) {
   await tipoDiGiocata.click();
   await this.pause(3);
@@ -139,8 +137,8 @@ async collectSottoScommesse(tipoDiGiocata) {
 
       const currentObjArr = await this.collectAllTheInfo(tipoDiGiocata);
       currentObjArr.forEach((obj) => {
-        obj.tipoDiGiocata = tipoDiGiocata;
-        obj.nazione = nazione;
+        obj.TipoDiGiocata = tipoDiGiocata;
+        obj.Nazione = nazione;
 
         objArr.push(obj);
       });
@@ -167,13 +165,6 @@ console.log("line 156_____________________________")
    // Group tipo di quota into separate arrays
   let quotaGroups = tipoDiQuotaArr.map(quota => [quota]);
 
-     // Group lineas into pairs
-     let lineaGroups = [];
-     for(let i = 0; i < lineaArrBlob.length; i += 2){
-       const group = lineaArrBlob.slice(i, i + 2);
-       lineaGroups.push(group);
-     }
-
      // Group teams names into pairs
      let teamsGroups = [];
      for(let i = 0; i < teamsNamesArrBlob.length; i += 2){
@@ -181,7 +172,7 @@ console.log("line 156_____________________________")
        teamsGroups.push(group);
      }
    // Normalize data
-  let objArr = await this.normalizeData(date, teamsGroups, lineaArrBlob, quotaGroups);
+  let objArr = await this.normalizeData(date, teamsGroups, lineaArrBlob, quotaGroups, tipoDiGiocata);
    return objArr;
 }
 async collectTipoDiQuota() {
@@ -194,7 +185,6 @@ async collectTipoDiQuota() {
         }
         return array
 }
-
 async collectTeamsLinea(tipoDiGiocata) {
     let array = []
         // Selettore CSS composto per combinare i due selettori
@@ -206,8 +196,9 @@ async collectTeamsLinea(tipoDiGiocata) {
     let divConQuoteSquadre = await fatherBox.findElements(By.css("div.betprematch__manifestazione__quote div.betprematch__manifestazione__quote__item"))
     
     if(giocateSpeciali.has(tipoDiGiocata)){
-      //raccogliere i dati facendo hover con il cursore
-      console.log("è il momento di sviluppare una fn")
+      let array = await this.collectTeamsLineaHover()
+      console.log("Sto raccogliendo i dati ma ho bisogno di fare hover con il mouse", array)
+      return array
     } else {
       //raccogliere la linea gia presente
       for (let i = 0; i < divConQuoteSquadre.length; i++){
@@ -226,7 +217,6 @@ async collectTeamsLinea(tipoDiGiocata) {
     }
 
 }
-  
 async collectDateInfo() {
      let dataFather = await this.driver.findElement(By.css("betprematch div.betprematch__manifestazione__event__date"));
      let daynumber = await dataFather.findElement(By.css("div.betprematch__manifestazione__event__date span.daynumber")).getText();
@@ -235,7 +225,6 @@ async collectDateInfo() {
      let dateString = daynumber + " " + month + ", " + day;
      return dateString;
 }
-
 async collectTeamsName() {
     let father = await this.driver.findElement(By.css("div.betprematch__manifestazione__content.item0"));
     let teamsInfoLeftColumn = await father.findElement(By.css("div.betprematch__manifestazione__events"));
@@ -254,42 +243,156 @@ async collectTeamsName() {
   }
   return array
 }
+async collectTeamsLineaHover(){
+  let array = []
+  let outsideDivs = await this.driver.findElements(By.css("div.ng-scope.quote__row__item--handicap"));
+  await this.scrollDown(1)
+  console.log("outsideDiv length: ", outsideDivs.length)
 
-async normalizeData(date, teamsGroups, lineaArrBlob, quotaGroups) {
-  let objArray = []
- 
-  let flatArray = teamsGroups.flat(Infinity)
-  let l2Array = await this.creaSottoarrayDiLunghezza2(flatArray)
+  for (let j = 0; j < outsideDivs.length; j++){
+    this.pause(1.5)
+    const actions = this.driver.actions({ async: true });
 
-  let l = lineaArrBlob.length / quotaGroups.length
-  console.log("date: " , date,"teamsGroup:", teamsGroups,"lineaArrBlob:", lineaArrBlob,"quotaGroups:", quotaGroups)
-  // quello che sto cercando di fare è:
-  // attraversare l array delle squadre usando k 
-  // attraversare l array delle quote usando i
-  // attraversare l array delle linee usando k 
-  // prendere l array delle linee, tagliarlo in gruppi da 5 in modo tale da essere piu facile accoppiarlo con le squadre
+    await actions.move({ origin: outsideDivs[j] }).perform();  
+    // Aspetta che il div fantasma appaia (puoi aggiustare il selettore CSS in base alla tua struttura HTML)
+  //await this.driver.wait(until.elementLocated(By.className('.quote__row__item--handicap__dropdown')), 10000);
 
-  for(let i = 0; i < quotaGroups.length; i++){
-    const chunk = await lineaArrBlob.splice(0, l)
-    console.log("This is chunk:", chunk)
-    for(let k = 0; k < chunk.length ; k++){
-      let obj = {}
-      obj.date = date
-      obj.squadra1 = l2Array[k][0]
-      obj.squadra2 = l2Array[k][1]
-    
-      obj.quota = quotaGroups[i]
-      obj.linea = chunk[k]
-      
-      objArray.push(obj)
+    // Ottieni il testo all'interno del div fantasma e stampalo
+    let ghostDiv = await this.driver.findElement(By.css('.quote__row__item--handicap__dropdown'));
+    for(let i = 0; i < 1;i++){
+      let selector1big = ".betprematch__manifestazione__quote table tr td span.ng-binding.quota"
+      let selector2 = "table tbody tr td small.ng-binding"
+      const composedSelector = `${selector1big},${selector2}`;
+      const elements = await this.driver.findElements(By.css(composedSelector))
+      if (i === 0) {
+        elements.forEach(obj =>{
+          let x = obj.getText()
+          array.push(x)
+      })
+      } else continue
     }
-  //prendo l2array e creo una variabile x = l2.slice(0,1) 
-  //in modo tale che ad ogni nuova iterazione sia sempre il primo della lista ad essere selezionato (x = [sq1,sq2])
+  }  
 
+  return array 
+}
+async moveCursorToElement(webElement) {
+  let text = await webElement.getAttribute("class")
+  console.log("text", text)
+  let locator =  text
+  const actions = this.driver.actions({ async: true });
+  const element = await this.driver.findElement(By.css(locator));
+  await actions.move({ origin: element }).perform();
+}
+async normalizeData(date, teamsGroups, lineaArrBlob, quotaGroups, tipoDiGiocata) {
+  const objArray = [];
+
+  const l2Array = await this.creaSottoarrayDiLunghezza2(teamsGroups.flat(Infinity));
+
+  if (giocateSpeciali.has(tipoDiGiocata)) {
+    await this.normalizeSpecialData(date, l2Array, lineaArrBlob, quotaGroups, objArray);
+  } else {
+    await this.normalizeRegularData(date, l2Array, lineaArrBlob, quotaGroups, objArray);
+  }
+
+  return objArray;
 }
 
-return objArray
+async normalizeSpecialData(date, l2Array, lineaArrBlob, quotaGroups, objArray) {
+  const x = lineaArrBlob.length / l2Array.length;
+  const chunk = await lineaArrBlob.slice(0, x);
+
+  for (let i = 0; i < l2Array.length; i++) {
+    for (let j = 0; j < chunk.length; j += 3) {
+      const obj = {
+        Date: date,
+        Squadra1: l2Array[i][0],
+        Squadra2: l2Array[i][1],
+        Quota: quotaGroups[0],
+        Linea: chunk[j],
+        UNDER: chunk[j + 1],
+        OVER: chunk[j + 2],
+      };
+      objArray.push(obj);
+    }
+  }
 }
+
+async normalizeRegularData(date, l2Array, lineaArrBlob, quotaGroups, objArray) {
+  let l = lineaArrBlob.length / quotaGroups.length;
+
+  for (let i = 0; i < quotaGroups.length; i++) {
+    const chunk = await lineaArrBlob.splice(0, l);
+    for (let k = 0; k < chunk.length; k++) {
+      const obj = {
+        Date: date,
+        Squadra1: l2Array[k][0],
+        Squadra2: l2Array[k][1],
+        Quota: quotaGroups[i],
+        Linea: chunk[k],
+      };
+      objArray.push(obj);
+    }
+  }
+}
+
+
+// async normalizeData(date, teamsGroups, lineaArrBlob, quotaGroups, tipoDiGiocata) {
+//   let objArray = []
+  
+
+//   let flatArray = teamsGroups.flat(Infinity)
+//   let l2Array = await this.creaSottoarrayDiLunghezza2(flatArray)
+//   console.log("l2", l2Array, "teamsGroup:", teamsGroups,"lineaArrBlob:", lineaArrBlob,"quotaGroups:", quotaGroups)
+//   if (giocateSpeciali.has(tipoDiGiocata)) {
+//     let x = lineaArrBlob.length/l2Array.length //ovvero tutte le linee raccolte diviso il numero di squadre = linee tot per ogni coppia di squaddre
+    
+//     let chunk = await lineaArrBlob.slice(0,x) //è uguale di lunghezza a tutte le linee presenti nel div
+//     console.log("This is x = ", x , "this is chunk speciale0", chunk, chunk.length)
+//     for(let i= 0; i < l2Array.length; i++){
+//       for(let j = 0; j < chunk.length; j+= 3){
+//          let obj = {}
+//          obj.date = date
+//          obj.squadra1 = l2Array[i][0]
+//          obj.squadra2 = l2Array[i][1]
+//          obj.quota = quotaGroups[0]
+//          obj.linea = chunk[j]
+//          obj.linea.under = chunk[j+1]
+//          obj.linea.over = chunk[j+2]
+
+//          objArray.push(obj)
+
+         
+//         console.log("sto creando l oggetto speciale e lo sto pushando")
+//       }
+//     }
+//   } else {
+//     console.log(flatArray)
+//     let l = lineaArrBlob.length / quotaGroups.length
+   
+//     for(let i = 0; i < quotaGroups.length; i++){
+//       const chunk = await lineaArrBlob.splice(0, l)
+//       console.log("This is chunk:", chunk)
+//       for(let k = 0; k < chunk.length ; k++){
+//         let obj = {}
+//         obj.date = date
+//         obj.squadra1 = l2Array[k][0]
+//         obj.squadra2 = l2Array[k][1]
+      
+//         obj.quota = quotaGroups[i]
+//         obj.linea = chunk[k]
+        
+//         objArray.push(obj)
+//       }
+//     //prendo l2array e creo una variabile x = l2.slice(0,1) 
+//     //in modo tale che ad ogni nuova iterazione sia sempre il primo della lista ad essere selezionato (x = [sq1,sq2])
+  
+//   }
+//   }
+ 
+
+
+// return objArray
+// }
 
 //----------------------------------------
 //GENERAL HELPER FUNCTIONS 
@@ -324,7 +427,7 @@ async  visualizzaElementi(array) {
     }
   }
 }
-   // Function to pause execution for a certain duration
+// Function to pause execution for a certain duration
 async pause(duration) {
     await new Promise(resolve => setTimeout(resolve, duration * 1000));
 }
@@ -343,7 +446,6 @@ async waitForElement(locator, timeout = 10000, className = '') {
 async  getTipoDiGiocataText(element) {
   return await element.getText();
 }
-
 async  visualizzaElementiArr(array) {
   let risultato = [];
 
@@ -354,7 +456,6 @@ async  visualizzaElementiArr(array) {
 
   return risultato;
 }
-
 async scrollDown(times) {
     for (let i = 0; i < times; i++) {
       // Scroll down by 200 pixels
@@ -367,7 +468,6 @@ async scrollUp() {
     await this.driver.executeScript('window.scrollBy(0, -200);');
     await this.driver.sleep(2000);
 }
-
 async waitForDOMContentLoaded() {
   await this.driver.executeScript(`
     return new Promise(resolve => {
@@ -381,7 +481,6 @@ async waitForDOMContentLoaded() {
     });
   `);
 }
-
 async waitUntilClickable(element) {
   const waitTimeout = 10000; // Timeout in milliseconds
   // const driver = element.parent || element.getDriver();
@@ -403,11 +502,9 @@ async waitUntilClickable(element) {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
-
 async wait(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
-
 async logKeysAndValues(array) {
   array.forEach((object, index) => {
     console.log('Object', index + 1);
@@ -417,11 +514,9 @@ async logKeysAndValues(array) {
     });
   });
 }
-
 //----------------------------------------
 //HELPER FUNCTIONS PER MANIPOLARE FILE CON I DATI DI NOSTRO INTERESSE 
 //----------------------------------------
-
 async createFileCSV() {
   const header = ["Data","Campionato","Squadra1", "Squadra2","Tipo_Di_Giocata", "Linea_Sq1", "Linea_Sq2","Linea_Tot" ]
   const csvData = header.join(',') + '\n';
@@ -434,7 +529,6 @@ async appendToCSV(data) {
 
   fs.appendFileSync("csvFileLineaGiocate", csvData, 'utf8');
 }
-
 async createCSVFileIfNotExist(data, campionato, squadra1, squadra2, tipoDigiocata, linea_Sq1, linea_Sq2, linea_Tot) {
   if (!fs.existsSync("csvFileLineaGiocate")) {
     createNewCSV();
@@ -447,7 +541,6 @@ async createCSVFileIfNotExist(data, campionato, squadra1, squadra2, tipoDigiocat
     console.log(error.message)
   }
 }
-
 //----------------------------------------
 // HELPER FUNCTIONS TO CLOSE POP UPS
 //----------------------------------------
@@ -501,4 +594,4 @@ async closeMobilePopUp() {
 
 }
 
-module.exports = { SportItaliaPage, tipiDiGiocateArr, tipiDiSottoGiocateArr, WebDriver };
+module.exports = { SportItaliaPage, WebDriver };

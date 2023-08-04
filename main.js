@@ -1,5 +1,5 @@
 const { Builder } = require('./selenium');
-const { SportItaliaPage, tipiDiGiocateArr, tipiDiSottoGiocateArr, options } = require('./SportItaliaPage');
+const { SportItaliaPage, options } = require('./SportItaliaPage');
 
 async function runScript() {
   const driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
