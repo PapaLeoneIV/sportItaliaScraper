@@ -5,11 +5,13 @@ const {By, until, WebDriver, WebDriverWait} = require('./selenium');
 //,'FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO", 'GOALS'
 //,"U/O ANGOLI","GOAL/NO GOAL",'U/O TIRI TOTALI', "U/O TIRI IN PORTA","OVER/UNDER", "U/O FUORIGIOCO", "U/O FALLI COMMESSI" 
 //"INTERNAZIONALE","INTERNAZIONALI GIOVANILI", "ARGENTINA","FINLANDIA","LITUANIA", 
-const tipiDiGiocateArr = new Set(['FUORIGIOCO', 'FALLI COMMESSI','CARTELLINI','TIRI',"CALCI D'ANGOLO"]);
-const tipiDiSottoGiocateArr = new Set(["U/O ANGOLI",'U/O TIRI TOTALI','U/O TIRI TOTALI TEAM', "U/O TIRI IN PORTA","U/O TIRI IN PORTA TEAM","U/O FUORIGIOCO", "U/O FALLI COMMESSI" ]);
-const giocateSpeciali = new Set (["U/O ANGOLI", "CARTELLINI"])
-const tipiDiNazioniArr = new Set (["INGHILTERRA", "CONFERENCE LEAGUE", "ARGENTINA","BRASILE", "COLOMBIA", "CHAMPIONS LEAGUE", "INTERNAZIONALI CLUB"])
- // Define the SportItaliaPage class
+const tipiDiGiocateArr = new Set(['TIRI']);
+const tipiDiSottoGiocateArr = new Set(["U/O CARTELLINI","U/O ANGOLI",'U/O TIRI TOTALI','U/O TIRI TOTALI TEAM', "U/O TIRI IN PORTA","U/O TIRI IN PORTA TEAM","U/O FUORIGIOCO", "U/O FALLI COMMESSI" ]);
+const giocateSpeciali = new Set (["U/O ANGOLI", "U/O CARTELLINI", 'U/O TIRI TOTALI','U/O TIRI TOTALI TEAM', "U/O TIRI IN PORTA","U/O TIRI IN PORTA TEAM"])
+const tipiDiNazioniArr = new Set (["SUPERCOPPA EUROPEA","SERIE A","INGHILTERRA", "CONFERENCE LEAGUE", "ARGENTINA","BRASILE", "COLOMBIA", "CHAMPIONS LEAGUE", "INTERNAZIONALI CLUB"])
+ 
+const giocateconHoverSpec = new Set (["U/O TIRI TOTALI TEAM"])
+  // Define the SportItaliaPage class
 
 class SportItaliaPage {
   constructor(driver) {
@@ -68,7 +70,7 @@ async collectTipiDiScommesse() {
 
           for (let i = 0; i < giocateArr.length; i++) {
             let objArr = []
-            const tipoDiGiocataText = await this.getTipoDiGiocataText(giocateArr[i]);
+            const tipoDiGiocataText = await giocateArr[i].getText()
   
             if (tipiDiGiocateArr.has(tipoDiGiocataText)) {
               console.log(`Questo è il primo tipo di scommesse che ci interessano, il testo è: --> ${tipoDiGiocataText}`);
@@ -76,13 +78,111 @@ async collectTipiDiScommesse() {
               objArr.forEach(obj => {
                 obj.Giocata = tipoDiGiocataText
               })
-              await this.logKeysAndValues(objArr)
+              
             } else {
               console.log(`non è nei nostri interessi ----> ${tipoDiGiocataText}  (collectTipiDiScommesse).`);
             }
+           // let oggettiFinali = await this.normalizzaOggetti(objArr)
+              await this.logKeysAndValues(objArr)
+//await this.loggareDatiOggetti(oggettiFinali)
           }
         }
 }
+async loggareDatiOggetti(arrayOggetti) {
+  for (let i = 0; i < arrayOggetti.length; i++) {
+    const oggetto = arrayOggetti[i];
+    console.log("Oggetto:", oggetto);
+
+    // Puoi accedere ai dati specifici di ciascun oggetto e stamparli
+    console.log("Date:", oggetto.date);
+    console.log("Nazione:", oggetto.nazione);
+    console.log("Squadra 1:", oggetto.squadra1);
+    console.log("Squadra 2:", oggetto.squadra2);
+
+    // Puoi accedere alle giocate di ciascun oggetto e stamparle
+    const giocate = oggetto.giocate;
+    for (const tipoGiocata in giocate) {
+      console.log("Tipo di Giocata:", tipoGiocata);
+      console.log("Linea:", giocate[tipoGiocata].linea);
+      console.log("Quota:", giocate[tipoGiocata].quota);
+      console.log("Under:", giocate[tipoGiocata].under);
+      console.log("Over:", giocate[tipoGiocata].over);
+    }
+
+    console.log("----------------------------------------");
+  }
+}
+
+
+// async normalizzaOggetti(array) {
+//   const risultato = [];
+
+//   const mappaTipiGiocate = {
+//     Tiri: "TIRI",
+//     CARTELLINI: "CARTELLINI",
+//     "CALCI D'ANGOLO": "CALCI_DANGOLO",
+//     // Aggiungi altre tipologie di giocate se necessario...
+//   };
+
+//   for (let i = 0; i < array.length; i++) {
+//     const {
+//       Date,
+//       Nazione,
+//       Squadra1,
+//       Squadra2,
+//       Quota,
+//       TipodiGiocata,
+//       Linea,
+//       UNDER,
+//       OVER,
+//     } = array[i];
+
+//     const squadraId = `${Squadra1} - ${Squadra2}`;
+
+//     const oggettoNormalizzato = {
+//       Date,
+//       Nazione,
+//       Squadra1,
+//       Squadra2,
+//       Giocata: {},
+//     };
+
+//     const giocate = oggettoNormalizzato.Giocata;
+
+//     const tipoGiocata = mappaTipiGiocate[TipodiGiocata] || TipodiGiocata;
+
+//     if (!giocate[tipoGiocata]) {
+//       giocate[tipoGiocata] = {
+//         Linea,
+//         Quota,
+//         UNDER: {},
+//         OVER: {},
+//       };
+//     }
+
+//     if (UNDER && OVER) {
+//       giocate[tipoGiocata].UNDER[Linea] = Number(UNDER);
+//       giocate[tipoGiocata].OVER[Linea] = Number(OVER);
+//     } else {
+//       giocate[tipoGiocata].Quota = Quota;
+//     }
+
+//     const squadraGiaPresente = risultato.findIndex(item => item.squadraId === squadraId);
+//     if (squadraGiaPresente !== -1) {
+//       risultato[squadraGiaPresente].Giocata[tipoGiocata] = giocate;
+//     } else {
+//       oggettoNormalizzato.squadraId = squadraId;
+//       risultato.push(oggettoNormalizzato);
+//       console.log(oggettoNormalizzato, "||||||||||||||||||||||||||||||||")
+//     }
+//   }
+  
+//   return risultato;
+// }
+
+
+
+
 async collectSottoScommesse(tipoDiGiocata) {
   await tipoDiGiocata.click();
   await this.pause(3);
@@ -94,24 +194,23 @@ async collectSottoScommesse(tipoDiGiocata) {
   for (let i = 0; i < tipiDiGiocateSpecificheElements.length; i++) {
 
     const element = tipiDiGiocateSpecificheElements[i];
-    const tipoDiGiocata = await this.getTipoDiGiocataText(element);
+    const tipoDiGiocata = await element.getText()
 
     if (!tipiDiSottoGiocateArr.has(tipoDiGiocata)) {
       console.log("il tipo di sottogiocata non è presente nelle tue sottoscommesse (CollectSottoScommesse)");
       continue;
     }
-
+    await this.pause(1.5)
     await element.click();
     await this.pause(3);
     console.log(`sto cliccando su -----> ${tipoDiGiocata}`);
 
     const nazioniArr = await this.driver.findElements(By.css("[ng-click='bpManifestazioneCtrl.manifestazioneobj.SelectCountryMatch(country, null)']"));
-
     for (let j = 0; j < nazioniArr.length; j++) {
-      
       await this.pause(2);
-      const nazioneElement = nazioniArr[j];
-      let nazione = (await nazioneElement.getText()).trim();
+      let nazioneElement = await this.driver.findElement(By.css("[ng-click='bpManifestazioneCtrl.manifestazioneobj.SelectCountryMatch(country, null)']"));
+      let nazione = await nazioneElement.getText();
+      nazione = nazione.trim();
 
       if (!tipiDiNazioniArr.has(nazione)) {
         continue;
@@ -246,7 +345,7 @@ async collectTeamsName() {
 async collectTeamsLineaHover(){
   let array = []
   let outsideDivs = await this.driver.findElements(By.css("div.ng-scope.quote__row__item--handicap"));
-  await this.scrollDown(1)
+  await this.scrollDown2(1)
   console.log("outsideDiv length: ", outsideDivs.length)
 
   for (let j = 0; j < outsideDivs.length; j++){
@@ -258,7 +357,7 @@ async collectTeamsLineaHover(){
   //await this.driver.wait(until.elementLocated(By.className('.quote__row__item--handicap__dropdown')), 10000);
 
     // Ottieni il testo all'interno del div fantasma e stampalo
-    let ghostDiv = await this.driver.findElement(By.css('.quote__row__item--handicap__dropdown'));
+    // let ghostDiv = await this.driver.findElement(By.css('.quote__row__item--handicap__dropdown'));
     for(let i = 0; i < 1;i++){
       let selector1big = ".betprematch__manifestazione__quote table tr td span.ng-binding.quota"
       let selector2 = "table tbody tr td small.ng-binding"
@@ -303,6 +402,7 @@ async normalizeSpecialData(date, l2Array, lineaArrBlob, quotaGroups, objArray) {
 
   for (let i = 0; i < l2Array.length; i++) {
     for (let j = 0; j < chunk.length; j += 3) {
+      console.log("sto normalizzando i dati speciali")
       const obj = {
         Date: date,
         Squadra1: l2Array[i][0],
@@ -463,6 +563,13 @@ async scrollDown(times) {
       await this.driver.sleep(2000);
     }
 }
+async scrollDown2(times) {
+  for (let i = 0; i < times; i++) {
+    // Scroll down by 200 pixels
+    await this.driver.executeScript('window.scrollBy(0, +50);');
+    await this.driver.sleep(2000);
+  }
+}
 async scrollUp() {
     // Scroll up by 200 pixels
     await this.driver.executeScript('window.scrollBy(0, -200);');
@@ -512,8 +619,11 @@ async logKeysAndValues(array) {
       console.log('Key:', key);
       console.log('Value:', object[key]);
     });
+
+    console.log("<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>");
   });
 }
+
 //----------------------------------------
 //HELPER FUNCTIONS PER MANIPOLARE FILE CON I DATI DI NOSTRO INTERESSE 
 //----------------------------------------
